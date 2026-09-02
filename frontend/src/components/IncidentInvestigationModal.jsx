@@ -1,262 +1,133 @@
 import React from 'react';
-import { 
-  X, 
-  ShieldAlert, 
-  Bot, 
-  RefreshCw, 
-  ShieldCheck,
-  ChevronRight,
-  Fingerprint,
-  Radio,
-  FileCode2,
-  Lock
-} from 'lucide-react';
+import { Bot, Fingerprint, Radio, RefreshCw, ShieldAlert, ShieldCheck, X } from 'lucide-react';
+import { StatusBadge } from './ui.jsx';
 
-export default function IncidentInvestigationModal({
-  event,
-  onClose,
-  aiAnalysis,
-  loadingAi,
-  onReAnalyze
-}) {
+function Row({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-white/[0.055] py-2.5 last:border-0">
+      <span className="text-zinc-500">{label}</span>
+      <span className="telemetry max-w-[60%] truncate text-right text-zinc-200">{value ?? 'N/A'}</span>
+    </div>
+  );
+}
+
+function Section({ num, title, icon: Icon, children }) {
+  return (
+    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="h-4 w-4 text-zinc-500" />
+        <div className="section-kicker">{num} {title}</div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+export default function IncidentInvestigationModal({ event, onClose, aiAnalysis, loadingAi, onReAnalyze }) {
   if (!event) return null;
-
-  const isSafe = event.verdict === 'SAFE';
-  const isSusp = event.verdict === 'SUSPICIOUS';
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
-      <div 
+      <button
+        type="button"
+        aria-label="Close investigation"
         onClick={onClose}
-        className="absolute inset-0 bg-[#080A0D]/75 backdrop-blur-sm transition-opacity animate-in fade-in duration-200" 
+        className="absolute inset-0 bg-black/55 backdrop-blur-sm"
       />
 
-      {/* Slide-over Drawer from Right */}
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-xl md:max-w-2xl bg-[#0E1219] border-l border-[#222B3B] shadow-2xl flex flex-col animate-in slide-in-from-right duration-250">
-          
-          {/* Drawer Header */}
-          <div className="h-16 px-6 border-b border-[#19202C] flex items-center justify-between bg-[#0B0E14] flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg border ${
-                isSafe
-                  ? 'bg-[#062419] border-[#134E3A] text-emerald-400'
-                  : isSusp
-                  ? 'bg-[#241804] border-[#593E0D] text-amber-400'
-                  : 'bg-[#260A0E] border-[#591720] text-rose-400'
-              }`}>
-                <ShieldAlert className="w-4 h-4" />
-              </div>
+      <aside className="drawer-in fixed inset-y-0 right-0 flex w-full max-w-2xl flex-col border-l border-white/[0.1] bg-[#0b0c0e] shadow-2xl">
+        <header className="flex min-h-20 items-center justify-between gap-4 border-b border-white/[0.08] px-5 md:px-6">
+          <div className="min-w-0">
+            <div className="section-kicker">Incident Investigation</div>
+            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+              <h2 className="truncate text-lg font-semibold text-zinc-50">{event.event_id}</h2>
+              <StatusBadge value={event.verdict} />
+            </div>
+            <div className="telemetry mt-1 truncate text-xs text-zinc-600">{event.timestamp} / {event.simulation_mode}</div>
+          </div>
+          <button onClick={onClose} className="rounded-full p-2 text-zinc-500 transition hover:bg-white/[0.05] hover:text-zinc-100" aria-label="Close">
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+
+        <div className="flex-1 space-y-4 overflow-y-auto p-5 text-sm md:p-6">
+          <Section num="01" title="Authoritative Verdict" icon={ShieldAlert}>
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-100">
-                    Incident Investigation Record
-                  </h3>
-                  <span className="px-2 py-0.5 text-[9px] font-mono rounded bg-[#151C27] text-slate-400 border border-[#212E42]">
-                    {event.event_id}
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-500 font-mono">
-                  Timestamp: {event.timestamp} • Mode: {event.simulation_mode}
-                </span>
+                <div className="text-2xl font-semibold tracking-normal text-zinc-50">{event.verdict}</div>
+                <p className="mt-2 leading-6 text-zinc-400">{event.reason}</p>
               </div>
+              <StatusBadge value={event.action} />
             </div>
+          </Section>
 
-            <button
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-200 rounded hover:bg-[#151C27] transition-colors"
-              aria-label="Close Investigation Drawer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <Section num="02" title="Quantum Telemetry" icon={Radio}>
+            <div className="grid grid-cols-2 gap-x-5 text-xs md:grid-cols-5">
+              <Row label="QBER" value={event.qber !== null && event.qber !== undefined ? `${(event.qber * 100).toFixed(2)}%` : 'N/A'} />
+              <Row label="Baseline" value={event.baseline_qber !== null && event.baseline_qber !== undefined ? `${(event.baseline_qber * 100).toFixed(3)}%` : 'N/A'} />
+              <Row label="TVD" value={event.tvd !== null && event.tvd !== undefined ? event.tvd.toFixed(4) : 'N/A'} />
+              <Row label="p-value" value={event.p_value !== null && event.p_value !== undefined ? (event.p_value < 0.0001 ? '<0.0001' : event.p_value.toFixed(4)) : 'N/A'} />
+              <Row label="Z-score" value={event.z_score !== null && event.z_score !== undefined ? event.z_score.toFixed(2) : 'N/A'} />
+            </div>
+          </Section>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Section num="03" title="Classical Controls" icon={ShieldCheck}>
+              <div className="text-xs">
+                <Row label="Signer" value={event.signer_id} />
+                <Row label="Certificate" value={event.attack_type === 'signer_impersonation' ? 'IMPERSONATION' : 'VALID'} />
+                <Row label="Nonce" value={event.attack_type === 'replay_attack' ? 'REPLAYED' : 'UNIQUE'} />
+              </div>
+            </Section>
+
+            <Section num="04" title="Cryptographic Identifiers" icon={Fingerprint}>
+              <div className="text-xs">
+                <Row label="Signature ID" value={event.signature_id} />
+                <Row label="Nonce" value={event.nonce} />
+                <Row label="Session ID" value={event.session_id} />
+              </div>
+            </Section>
           </div>
 
-          {/* Drawer Scrollable Content */}
-          <div className="flex-1 p-6 space-y-5 overflow-y-auto text-xs font-mono">
-            
-            {/* 01. Authoritative Deterministic Verdict & Action Banner */}
-            <div className={`p-4 rounded-xl border ${
-              isSafe
-                ? 'bg-[#062419]/40 border-[#134E3A]'
-                : isSusp
-                ? 'bg-[#241804]/40 border-[#593E0D]'
-                : 'bg-[#260A0E]/40 border-[#591720]'
-            }`}>
-              <div className="flex items-center justify-between">
+          <Section num="05" title="AI Incident Diagnosis" icon={Bot}>
+            <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-black/20 p-3 text-xs text-zinc-500">
+              <span>AI supports the deterministic verdict. It is not the authority of record.</span>
+              {aiAnalysis && <span className="pill">{aiAnalysis.provider}</span>}
+            </div>
+
+            {loadingAi ? (
+              <div className="flex items-center justify-center gap-2 py-8 text-sm text-zinc-500">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Evaluating incident telemetry...
+              </div>
+            ) : aiAnalysis?.analysis ? (
+              <div className="space-y-3">
                 <div>
-                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block">
-                    01 • Authoritative Deterministic Security Verdict
-                  </span>
-                  <strong className="text-base font-bold text-slate-100">{event.verdict}</strong>
+                  <div className="text-sm font-semibold text-zinc-100">{aiAnalysis.analysis.summary}</div>
+                  <p className="mt-2 leading-6 text-zinc-400">{aiAnalysis.analysis.explanation}</p>
                 </div>
-                <div className="text-right">
-                  <span className="text-[9px] text-slate-500 uppercase tracking-wider block">
-                    Mandatory Action
-                  </span>
-                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
-                    event.action === 'ACCEPT'
-                      ? 'bg-[#0E2E20] text-emerald-400'
-                      : event.action === 'FLAG_FOR_REVIEW'
-                      ? 'bg-[#2E200A] text-amber-400'
-                      : 'bg-[#330E14] text-rose-400'
-                  }`}>
-                    {event.action}
-                  </span>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
+                  <div className="section-kicker">Recommended SOC Response</div>
+                  <p className="mt-2 leading-6 text-zinc-300">{aiAnalysis.analysis.recommendation}</p>
                 </div>
               </div>
-              <p className="mt-2 text-[11px] text-slate-300 leading-relaxed pt-2 border-t border-[#19202C] font-sans">
-                {event.reason}
-              </p>
-            </div>
-
-            {/* 02. Quantum Telemetry & Exact Statistical Testing */}
-            <div className="bg-[#090C12] p-4 rounded-xl border border-[#161D28] space-y-2.5">
-              <div className="flex items-center gap-1.5 text-slate-400">
-                <Radio className="w-3.5 h-3.5 text-sky-400" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider">
-                  02 • Quantum Telemetry & Exact Binomial Statistical Testing
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                <div className="p-2.5 bg-[#0E131C] rounded border border-[#1A2230]">
-                  <span className="text-[9px] text-slate-500 block uppercase">Observed QBER</span>
-                  <strong className="text-slate-100 text-xs mt-0.5 block">
-                    {event.qber !== null && event.qber !== undefined ? `${(event.qber * 100).toFixed(2)}%` : 'N/A'}
-                  </strong>
-                </div>
-                <div className="p-2.5 bg-[#0E131C] rounded border border-[#1A2230]">
-                  <span className="text-[9px] text-slate-500 block uppercase">Baseline p_0</span>
-                  <strong className="text-slate-300 text-xs mt-0.5 block">
-                    {event.baseline_qber !== null && event.baseline_qber !== undefined ? `${(event.baseline_qber * 100).toFixed(3)}%` : 'N/A'}
-                  </strong>
-                </div>
-                <div className="p-2.5 bg-[#0E131C] rounded border border-[#1A2230]">
-                  <span className="text-[9px] text-slate-500 block uppercase">TVD Distance</span>
-                  <strong className="text-slate-300 text-xs mt-0.5 block">
-                    {event.tvd !== null && event.tvd !== undefined ? event.tvd.toFixed(4) : 'N/A'}
-                  </strong>
-                </div>
-                <div className="p-2.5 bg-[#0E131C] rounded border border-[#1A2230]">
-                  <span className="text-[9px] text-slate-500 block uppercase">Exact p-value</span>
-                  <strong className="text-slate-300 text-xs mt-0.5 block">
-                    {event.p_value !== null && event.p_value !== undefined ? (event.p_value < 0.0001 ? '<0.0001' : event.p_value.toFixed(4)) : 'N/A'}
-                  </strong>
-                </div>
-                <div className="p-2.5 bg-[#0E131C] rounded border border-[#1A2230]">
-                  <span className="text-[9px] text-slate-500 block uppercase">Z-Score</span>
-                  <strong className="text-slate-300 text-xs mt-0.5 block">
-                    {event.z_score !== null && event.z_score !== undefined ? event.z_score.toFixed(2) : 'N/A'}
-                  </strong>
-                </div>
-              </div>
-            </div>
-
-            {/* 03 & 04. Classical Security Controls & Cryptographic Identifiers */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-[#090C12] p-3.5 rounded-xl border border-[#161D28] space-y-2">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider">
-                    03 • Classical Controls
-                  </span>
-                </div>
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Signer Identity:</span>
-                    <strong className="text-slate-200">{event.signer_id}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Certificate Status:</span>
-                    <span className={`font-bold ${event.attack_type === 'signer_impersonation' ? 'text-rose-400' : 'text-emerald-400'}`}>
-                      {event.attack_type === 'signer_impersonation' ? 'IMPERSONATION' : 'VALID'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Nonce Freshness:</span>
-                    <span className={`font-bold ${event.attack_type === 'replay_attack' ? 'text-rose-400' : 'text-emerald-400'}`}>
-                      {event.attack_type === 'replay_attack' ? 'REPLAYED' : 'UNIQUE'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-[#090C12] p-3.5 rounded-xl border border-[#161D28] space-y-2">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <Fingerprint className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider">
-                    04 • Cryptographic Identifiers
-                  </span>
-                </div>
-                <div className="space-y-1.5 text-[11px]">
-                  <div className="truncate"><span className="text-slate-500">Sig ID:</span> <span className="text-slate-200">{event.signature_id}</span></div>
-                  <div className="truncate"><span className="text-slate-500">Nonce:</span> <span className="text-slate-300">{event.nonce}</span></div>
-                  <div className="truncate"><span className="text-slate-500">Session ID:</span> <span className="text-slate-400">{event.session_id}</span></div>
-                </div>
-              </div>
-            </div>
-
-            {/* 05. AI Incident Diagnosis */}
-            <div className="bg-[#090C12] border border-[#161D28] rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bot className="w-4 h-4 text-slate-400" />
-                  <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">
-                    05 • AI Security Analyst Incident Diagnosis
-                  </span>
-                </div>
-                {aiAnalysis && (
-                  <span className="text-[9px] text-slate-400 px-2 py-0.5 rounded bg-[#121620] border border-[#1E2533]">
-                    {aiAnalysis.provider}
-                  </span>
-                )}
-              </div>
-
-              {loadingAi ? (
-                <div className="p-4 text-center text-slate-400 flex items-center justify-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin text-slate-500" />
-                  <span>Evaluating incident forensic telemetry...</span>
-                </div>
-              ) : aiAnalysis?.analysis ? (
-                <div className="space-y-2.5">
-                  <div className="p-3 bg-[#0E131C] rounded-lg border border-[#1A2230]">
-                    <strong className="text-slate-200 block text-xs mb-1">{aiAnalysis.analysis.summary}</strong>
-                    <p className="text-slate-300 text-[11px] leading-relaxed font-sans">
-                      {aiAnalysis.analysis.explanation}
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-[#0E131C] rounded-lg border border-[#1A2230] space-y-1">
-                    <span className="text-[9px] text-slate-500 uppercase block font-semibold">Recommended SOC Response:</span>
-                    <p className="text-slate-200 font-medium text-[11px] font-sans">
-                      {aiAnalysis.analysis.recommendation}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-slate-500 py-2 text-[11px]">
-                  AI analysis unavailable for this record.
-                </div>
-              )}
-            </div>
-
-          </div>
-
-          {/* Drawer Footer */}
-          <div className="h-14 px-6 border-t border-[#19202C] bg-[#0B0E14] flex items-center justify-between flex-shrink-0">
-            <span className="text-[10px] text-slate-500 font-mono">
-              Forensic Log Record ID: {event.event_id}
-            </span>
-            <button
-              onClick={onClose}
-              className="px-4 py-1.5 bg-[#141A24] hover:bg-[#1A2230] text-slate-200 text-xs font-semibold rounded border border-[#222B3B] transition-colors"
-            >
-              Close Investigation
-            </button>
-          </div>
-
+            ) : (
+              <div className="py-5 text-center text-sm text-zinc-600">AI analysis unavailable for this record.</div>
+            )}
+          </Section>
         </div>
-      </div>
+
+        <footer className="flex items-center justify-between border-t border-white/[0.08] px-5 py-4 md:px-6">
+          <span className="telemetry truncate text-xs text-zinc-600">Record {event.event_id}</span>
+          <div className="flex gap-2">
+            <button onClick={onReAnalyze} className="btn-secondary">
+              <RefreshCw className={`h-3.5 w-3.5 ${loadingAi ? 'animate-spin' : ''}`} />
+              Re-analyze
+            </button>
+            <button onClick={onClose} className="btn-primary">Close</button>
+          </div>
+        </footer>
+      </aside>
     </div>
   );
 }

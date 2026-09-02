@@ -520,7 +520,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080A0D] text-slate-100 flex flex-col lg:flex-row font-sans qsoc-bg-grid selection:bg-sky-500/20 selection:text-sky-200">
+    <div className="app-shell min-h-screen text-zinc-100 selection:bg-sky-200/20 selection:text-sky-100">
       
       {/* SIDEBAR */}
       <QSOCSidebar 
@@ -531,7 +531,7 @@ export default function App() {
       />
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={`min-w-0 transition-[padding] duration-200 ${sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[264px]'}`}>
         
         {/* TOP COMMAND BAR */}
         <QSOCHeader
@@ -550,28 +550,45 @@ export default function App() {
 
         {/* ERROR NOTIFICATION BANNER */}
         {errorMsg && (
-          <div className="m-4 p-3 bg-[#240A0E] border border-[#591720] rounded-lg text-rose-300 text-xs font-mono flex items-center gap-2">
+          <div className="mx-4 mt-4 flex items-center gap-2 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs text-rose-200 md:mx-7">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* MAIN VIEWPORT */}
-        <main className="flex-1 p-4 md:p-5 space-y-5 max-w-7xl w-full mx-auto">
+        <main className="mx-auto w-full max-w-[1500px] space-y-8 p-4 md:p-7">
           
           {/* VIEW: DASHBOARD (MAIN UNIFIED SOC VIEW) */}
           {activeTab === 'dashboard' && (
-            <div className="space-y-4">
+            <div className="space-y-7">
               
               {/* Top View Title */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-1">
+              <div className="grid gap-6 xl:grid-cols-[1fr_360px] xl:items-end">
                 <div>
-                  <h1 className="text-base font-bold text-slate-100">
-                    Quantum Security Operations Center
+                  <div className="section-kicker">Overview</div>
+                  <h1 className="page-title mt-3 max-w-4xl">
+                    Quantum security operations center
                   </h1>
-                  <p className="text-xs text-slate-500 font-mono">
-                    Real-time quantum digital-signature verification, threat detection & incident intelligence
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-500">
+                    Deterministic quantum digital-signature verification, threat detection, incident intelligence, analytics, and exportable audit evidence.
                   </p>
+                </div>
+                <div className="surface rounded-[1.6rem] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-zinc-500">System State</span>
+                    <span className="pill status-safe">Operational</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-zinc-600">Mode</div>
+                      <div className="telemetry mt-1 text-zinc-200">{simulationMode === 'realistic_noise' ? 'realistic_noise' : 'ideal'}</div>
+                    </div>
+                    <div>
+                      <div className="text-zinc-600">AI Analyst</div>
+                      <div className="telemetry mt-1 text-zinc-200">{systemHealth?.components?.ai_analyst?.status === 'CONNECTED' ? 'Groq' : 'Fallback'}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -586,17 +603,10 @@ export default function App() {
               />
 
               {/* Grid: AI Security Analyst & Recent Threat Activity */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                <div className="lg:col-span-6">
-                  <AISecurityAnalystPanel
-                    aiAnalysis={aiAnalysis}
-                    loadingAi={loadingAi}
-                    onReAnalyze={() => requestAiAnalysis(simulationResult)}
-                  />
-                </div>
-                <div className="lg:col-span-6">
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_520px]">
+                <div>
                   <RecentThreatActivity
-                    securityEvents={displayedEvents}
+                    securityEvents={displayedEvents.slice(0, 8)}
                     onInvestigate={handleOpenEventModal}
                     onRefresh={() => fetchSecurityEvents(eventFilterVerdict, eventFilterAttackType, eventFilterMode)}
                     onClear={handleClearSecurityEvents}
@@ -615,6 +625,13 @@ export default function App() {
                       setEventFilterMode(sm);
                       fetchSecurityEvents(eventFilterVerdict, eventFilterAttackType, sm);
                     }}
+                  />
+                </div>
+                <div>
+                  <AISecurityAnalystPanel
+                    aiAnalysis={aiAnalysis}
+                    loadingAi={loadingAi}
+                    onReAnalyze={() => requestAiAnalysis(simulationResult)}
                   />
                 </div>
               </div>
@@ -738,53 +755,58 @@ export default function App() {
           {/* VIEW: REPORTS & EXPORT */}
           {activeTab === 'reports' && (
             <div className="space-y-4">
-              <div className="rounded-xl bg-[#0E1219] border border-[#19202C] p-5 shadow-sm space-y-4 font-mono">
-                <div className="flex items-center gap-2.5 pb-2.5 border-b border-[#19202C]">
-                  <Download className="w-5 h-5 text-sky-400" />
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-100">
-                      SOC Compliance & Incident Reports
-                    </h3>
-                    <p className="text-xs text-slate-500 font-sans">
-                      Export cryptographic and statistical security audit logs for compliance review.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="p-4 rounded-lg bg-[#090C12] border border-[#161D28] space-y-2.5">
-                    <div className="flex items-center gap-2 text-slate-200 font-bold text-xs">
-                      <FileText className="w-4 h-4 text-slate-400" />
-                      <span>Executive Security Report (JSON)</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
-                      Includes system health, executive KPI summary, confusion matrix, attack distribution, and full audit event traces.
-                    </p>
-                    <button
-                      onClick={() => handleExportReport('json')}
-                      className="px-3.5 py-1.5 bg-[#121620] hover:bg-[#181E2B] text-slate-200 font-semibold text-xs rounded border border-[#1E2533] transition-colors flex items-center gap-1.5"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Download JSON
-                    </button>
-                  </div>
-
-                  <div className="p-4 rounded-lg bg-[#090C12] border border-[#161D28] space-y-2.5">
-                    <div className="flex items-center gap-2 text-slate-200 font-bold text-xs">
-                      <FileText className="w-4 h-4 text-slate-400" />
-                      <span>Security Audit Log (CSV)</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
-                      Spreadsheet export of all historical verification events, QBER statistics, and deterministic security actions.
-                    </p>
-                    <button
-                      onClick={() => handleExportReport('csv')}
-                      className="px-3.5 py-1.5 bg-[#121620] hover:bg-[#181E2B] text-slate-200 font-semibold text-xs rounded border border-[#1E2533] transition-colors flex items-center gap-1.5"
-                    >
-                      <Download className="w-3.5 h-3.5" /> Download CSV
-                    </button>
-                  </div>
+              <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <div className="section-kicker">Reports & Export</div>
+                  <h1 className="page-title mt-2">Compliance evidence</h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
+                    Export the existing QSOC security report and audit log without changing backend report contracts.
+                  </p>
                 </div>
               </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <section className="surface rounded-[1.6rem] p-5">
+                  <div className="mb-10 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.035] text-zinc-400">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="section-kicker">JSON</div>
+                  <h2 className="mt-2 text-xl font-semibold text-zinc-50">Executive security report</h2>
+                  <p className="mt-3 text-sm leading-6 text-zinc-500">
+                    Includes system health, KPI summary, confusion matrix, attack distribution, and audit traces.
+                  </p>
+                  <button onClick={() => handleExportReport('json')} className="btn-primary mt-6">
+                    <Download className="h-3.5 w-3.5" />
+                    Download JSON
+                  </button>
+                </section>
+
+                <section className="surface rounded-[1.6rem] p-5">
+                  <div className="mb-10 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.035] text-zinc-400">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="section-kicker">CSV</div>
+                  <h2 className="mt-2 text-xl font-semibold text-zinc-50">Security audit log</h2>
+                  <p className="mt-3 text-sm leading-6 text-zinc-500">
+                    Spreadsheet export of verification events, QBER statistics, and deterministic security actions.
+                  </p>
+                  <button onClick={() => handleExportReport('csv')} className="btn-primary mt-6">
+                    <Download className="h-3.5 w-3.5" />
+                    Download CSV
+                  </button>
+                </section>
+              </div>
+
+              <section className="surface rounded-[1.6rem] p-5">
+                <div className="section-kicker">Export Scope</div>
+                <div className="mt-4 grid gap-3 md:grid-cols-4">
+                  {['System Health', 'Security Events', 'Analytics', 'Quantum Telemetry'].map((item) => (
+                    <div key={item} className="surface-soft rounded-2xl p-4 text-sm text-zinc-400">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
           )}
 
@@ -815,6 +837,7 @@ export default function App() {
       <CommandMenuModal
         isOpen={commandMenuOpen}
         onClose={() => setCommandMenuOpen(false)}
+        onOpen={() => setCommandMenuOpen(true)}
         onNavigate={(tab) => {
           if (tab) setActiveTab(tab);
           setCommandMenuOpen(false);

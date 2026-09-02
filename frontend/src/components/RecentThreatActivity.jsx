@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  FileText, 
-  RefreshCw, 
-  Trash2, 
-  Search 
-} from 'lucide-react';
+import { FileText, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { StatusBadge } from './ui.jsx';
+
+function formatAttack(type) {
+  return String(type || 'unknown').replace(/_/g, ' ');
+}
 
 export default function RecentThreatActivity({
   securityEvents,
@@ -16,150 +16,96 @@ export default function RecentThreatActivity({
   filterAttackType,
   setFilterAttackType,
   filterMode,
-  setFilterMode
+  setFilterMode,
 }) {
   return (
-    <div className="rounded-xl bg-[#0E1219] border border-[#19202C] p-4 shadow-md space-y-3">
-      
-      {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pb-2.5 border-b border-[#19202C]">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-[#141A24] border border-[#222B3B] rounded-lg text-slate-300">
-            <FileText className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="text-xs md:text-sm font-bold text-slate-100">
-              Recent Threat Activity & Audit Log
-            </h3>
-            <p className="text-[10px] text-slate-500 font-mono">
-              Persistent SQLite security telemetry
-            </p>
-          </div>
+    <section className="surface overflow-hidden rounded-[1.6rem]">
+      <div className="flex flex-col gap-4 border-b border-white/[0.07] p-5 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="section-kicker">Persistent Audit</div>
+          <h2 className="mt-2 text-xl font-semibold tracking-normal text-zinc-50">Security Events</h2>
+          <p className="mt-1 text-sm text-zinc-500">SQLite-backed incident stream with forensic investigation.</p>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
-          <select
-            value={filterVerdict}
-            onChange={(e) => setFilterVerdict(e.target.value)}
-            className="bg-[#080A0D] border border-[#1C2330] rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-[#323E54]"
-          >
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={filterVerdict} onChange={(e) => setFilterVerdict(e.target.value)} className="field max-w-[150px]">
             <option value="all">All Verdicts</option>
             <option value="SAFE">SAFE</option>
             <option value="SUSPICIOUS">SUSPICIOUS</option>
             <option value="ATTACK DETECTED">ATTACK DETECTED</option>
           </select>
-
-          <select
-            value={filterAttackType}
-            onChange={(e) => setFilterAttackType(e.target.value)}
-            className="bg-[#080A0D] border border-[#1C2330] rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-[#323E54]"
-          >
-            <option value="all">All Attacks</option>
+          <select value={filterAttackType} onChange={(e) => setFilterAttackType(e.target.value)} className="field max-w-[160px]">
+            <option value="all">All Threats</option>
             <option value="none">Clean</option>
-            <option value="channel_manipulation">Channel Tamper</option>
-            <option value="signature_forgery">Signature Forgery</option>
-            <option value="replay_attack">Replay Attack</option>
+            <option value="channel_manipulation">Channel</option>
+            <option value="signature_forgery">Forgery</option>
+            <option value="replay_attack">Replay</option>
             <option value="signer_impersonation">Impersonation</option>
           </select>
-
-          <button
-            onClick={onRefresh}
-            className="p-1 bg-[#121620] hover:bg-[#181E2B] text-slate-300 rounded border border-[#1E2533] transition-colors"
-            title="Refresh Log"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
+          <select value={filterMode} onChange={(e) => setFilterMode(e.target.value)} className="field max-w-[140px]">
+            <option value="all">All Modes</option>
+            <option value="ideal">Ideal</option>
+            <option value="realistic_noise">Noise</option>
+          </select>
+          <button onClick={onRefresh} className="btn-secondary" title="Refresh log">
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
           </button>
-
-          <button
-            onClick={onClear}
-            className="px-2 py-1 text-[10px] text-rose-400 hover:text-rose-300 bg-[#121620] hover:bg-[#1C0E12] rounded border border-[#1E2533] hover:border-[#4D151D] flex items-center gap-1 transition-colors"
-            title="Clear Log"
-          >
-            <Trash2 className="w-3 h-3" /> Clear
+          <button onClick={onClear} className="btn-danger" title="Clear log">
+            <Trash2 className="h-3.5 w-3.5" />
+            Reset
           </button>
         </div>
       </div>
 
-      {/* Events Table */}
       <div className="overflow-x-auto">
         {securityEvents?.length > 0 ? (
-          <table className="w-full text-left text-[11px] font-mono">
-            <thead className="bg-[#090C12] text-slate-500 border-b border-[#161D28]">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="py-2 px-2.5">TIME (UTC)</th>
-                <th className="py-2 px-2.5">INCIDENT</th>
-                <th className="py-2 px-2.5">SIGNER</th>
-                <th className="py-2 px-2.5">QBER</th>
-                <th className="py-2 px-2.5">VERDICT</th>
-                <th className="py-2 px-2.5">ACTION</th>
-                <th className="py-2 px-2.5 text-right">FORENSIC</th>
+                <th className="text-left">Time</th>
+                <th className="text-left">Threat</th>
+                <th className="text-left">Signer</th>
+                <th className="text-left">QBER</th>
+                <th className="text-left">Verdict</th>
+                <th className="text-left">Action</th>
+                <th className="text-right">Investigate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#141A24]">
-              {securityEvents.map((evt) => {
-                const isSafe = evt.verdict === 'SAFE';
-                const isSusp = evt.verdict === 'SUSPICIOUS';
-
-                return (
-                  <tr key={evt.event_id} className="hover:bg-[#141A25] transition-colors">
-                    <td className="py-2 px-2.5 text-slate-400">
-                      {evt.timestamp ? evt.timestamp.split('T')[1]?.replace('Z', '').slice(0, 8) : 'N/A'}
-                    </td>
-                    <td className="py-2 px-2.5">
-                      <span className="font-semibold text-slate-200 uppercase">{evt.attack_type}</span>
-                      <span className="text-[9px] text-slate-500 block font-normal">{evt.simulation_mode}</span>
-                    </td>
-                    <td className="py-2 px-2.5 text-slate-300 truncate max-w-[110px]">
-                      {evt.signer_id}
-                    </td>
-                    <td className="py-2 px-2.5 font-bold text-slate-200">
-                      {evt.qber !== null && evt.qber !== undefined ? `${(evt.qber * 100).toFixed(2)}%` : '—'}
-                    </td>
-                    <td className="py-2 px-2.5">
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
-                        isSafe
-                          ? 'bg-[#062419] text-emerald-400 border-[#134E3A]'
-                          : isSusp
-                          ? 'bg-[#241804] text-amber-400 border-[#593E0D]'
-                          : 'bg-[#260A0E] text-rose-400 border-[#591720]'
-                      }`}>
-                        {evt.verdict}
-                      </span>
-                    </td>
-                    <td className="py-2 px-2.5">
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                        evt.action === 'ACCEPT'
-                          ? 'text-emerald-400'
-                          : evt.action === 'FLAG_FOR_REVIEW'
-                          ? 'text-amber-400'
-                          : 'text-rose-400'
-                      }`}>
-                        {evt.action}
-                      </span>
-                    </td>
-                    <td className="py-2 px-2.5 text-right">
-                      <button
-                        onClick={() => onInvestigate(evt)}
-                        className="px-2 py-0.5 text-[10px] bg-[#121620] hover:bg-[#181E2B] text-slate-300 border border-[#1E2533] rounded flex items-center gap-1 ml-auto transition-colors"
-                      >
-                        <Search className="w-3 h-3" /> Details
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+            <tbody>
+              {securityEvents.map((evt) => (
+                <tr key={evt.event_id}>
+                  <td className="telemetry whitespace-nowrap text-zinc-500">
+                    {evt.timestamp ? evt.timestamp.split('T')[1]?.replace('Z', '').slice(0, 8) : 'N/A'}
+                  </td>
+                  <td>
+                    <div className="font-medium capitalize text-zinc-200">{formatAttack(evt.attack_type)}</div>
+                    <div className="telemetry text-[11px] text-zinc-600">{evt.simulation_mode}</div>
+                  </td>
+                  <td className="telemetry max-w-[170px] truncate text-zinc-400">{evt.signer_id}</td>
+                  <td className="telemetry font-semibold text-zinc-200">
+                    {evt.qber !== null && evt.qber !== undefined ? `${(evt.qber * 100).toFixed(2)}%` : '-'}
+                  </td>
+                  <td><StatusBadge value={evt.verdict} /></td>
+                  <td><StatusBadge value={evt.action} /></td>
+                  <td className="text-right">
+                    <button onClick={() => onInvestigate(evt)} className="btn-secondary min-h-8 px-3">
+                      <Search className="h-3.5 w-3.5" />
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         ) : (
-          <div className="p-6 text-center text-slate-500 space-y-1.5 font-mono">
-            <FileText className="w-6 h-6 mx-auto text-slate-600" />
-            <p className="text-xs text-slate-400">No Security Events Recorded</p>
-            <p className="text-[10px] text-slate-500">Run a verification transaction or Full SOC Demo to populate the log.</p>
+          <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+            <FileText className="h-7 w-7 text-zinc-700" />
+            <div className="mt-3 text-sm font-medium text-zinc-300">No security events recorded</div>
+            <div className="mt-1 text-sm text-zinc-600">Run verification or the Full SOC Demo to populate the log.</div>
           </div>
         )}
       </div>
-
-    </div>
+    </section>
   );
 }

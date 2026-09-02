@@ -1,141 +1,96 @@
-import React, { useEffect, useState } from 'react';
-import { Activity, ShieldAlert, Target, ShieldCheck, Percent, TrendingUp } from 'lucide-react';
-
-// Smooth number transition helper
-function AnimatedValue({ value, suffix = '', decimals = 0 }) {
-  const [displayValue, setDisplayValue] = useState(value);
-
-  useEffect(() => {
-    if (typeof value !== 'number' || isNaN(value)) {
-      setDisplayValue(value);
-      return;
-    }
-
-    const start = typeof displayValue === 'number' ? displayValue : 0;
-    const end = value;
-    const duration = 300;
-    const startTime = performance.now();
-
-    const updateNumber = (now) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      const current = start + (end - start) * ease;
-      setDisplayValue(current);
-
-      if (progress < 1) {
-        requestAnimationFrame(updateNumber);
-      } else {
-        setDisplayValue(end);
-      }
-    };
-
-    requestAnimationFrame(updateNumber);
-  }, [value]);
-
-  if (typeof displayValue !== 'number' || isNaN(displayValue)) {
-    return <span>{value}{suffix}</span>;
-  }
-
-  return <span>{displayValue.toFixed(decimals)}{suffix}</span>;
-}
+import React from 'react';
+import { Activity, Percent, ShieldAlert, ShieldCheck, Target, TrendingUp } from 'lucide-react';
+import { AnimatedNumber } from './ui.jsx';
 
 export default function KPICards({ analyticsData }) {
   if (!analyticsData) return null;
 
   const cm = analyticsData.classification_metrics || {};
-
-  const cards = [
+  const metrics = [
     {
-      id: 'total_attempts',
-      title: 'TOTAL ATTEMPTS',
+      id: 'attempts',
+      label: 'Total Attempts',
       value: analyticsData.total_attempts,
       decimals: 0,
       suffix: '',
-      valColor: 'text-slate-100',
-      subtext: `SAFE: ${analyticsData.safe_count} | SUSP: ${analyticsData.suspicious_count}`,
+      detail: `${analyticsData.safe_count} safe / ${analyticsData.suspicious_count} suspicious`,
       icon: Activity,
+      tone: 'text-zinc-50',
     },
     {
-      id: 'attacks_detected',
-      title: 'ATTACKS BLOCKED',
+      id: 'attacks',
+      label: 'Attacks Detected',
       value: analyticsData.attack_detected_count,
       decimals: 0,
       suffix: '',
-      valColor: 'text-rose-400',
-      subtext: `Detection Rate: ${(analyticsData.detection_rate * 100).toFixed(1)}%`,
+      detail: `${((analyticsData.detection_rate || 0) * 100).toFixed(1)}% detection rate`,
       icon: ShieldAlert,
+      tone: 'text-rose-300',
     },
     {
       id: 'precision',
-      title: 'PRECISION',
+      label: 'Precision',
       value: (cm.precision || 0) * 100,
       decimals: 1,
       suffix: '%',
-      valColor: 'text-emerald-400',
-      subtext: `TP: ${cm.true_positives || 0} / FP: ${cm.false_positives || 0}`,
+      detail: `${cm.true_positives || 0} TP / ${cm.false_positives || 0} FP`,
       icon: Target,
+      tone: 'text-emerald-300',
     },
     {
       id: 'recall',
-      title: 'RECALL',
+      label: 'Recall / Sensitivity',
       value: (cm.recall || 0) * 100,
       decimals: 1,
       suffix: '%',
-      valColor: 'text-sky-400',
-      subtext: `FN: ${cm.false_negatives || 0} / TN: ${cm.true_negatives || 0}`,
+      detail: `${cm.false_negatives || 0} FN / ${cm.true_negatives || 0} TN`,
       icon: ShieldCheck,
+      tone: 'text-sky-200',
     },
     {
       id: 'fpr',
-      title: 'FALSE POSITIVE RATE',
+      label: 'False Positive Rate',
       value: (cm.false_positive_rate || 0) * 100,
       decimals: 2,
       suffix: '%',
-      valColor: 'text-slate-300',
-      subtext: `FNR: ${((cm.false_negative_rate || 0) * 100).toFixed(2)}%`,
+      detail: `${((cm.false_negative_rate || 0) * 100).toFixed(2)}% FNR`,
       icon: Percent,
+      tone: 'text-zinc-200',
     },
     {
-      id: 'avg_qber',
-      title: 'AVERAGE QBER',
+      id: 'qber',
+      label: 'Average QBER',
       value: (analyticsData.average_qber || 0) * 100,
       decimals: 2,
       suffix: '%',
-      valColor: 'text-slate-300',
-      subtext: `Min: ${((analyticsData.min_qber || 0) * 100).toFixed(1)}% | Max: ${((analyticsData.max_qber || 0) * 100).toFixed(1)}%`,
+      detail: `${((analyticsData.min_qber || 0) * 100).toFixed(1)} min / ${((analyticsData.max_qber || 0) * 100).toFixed(1)} max`,
       icon: TrendingUp,
+      tone: 'text-zinc-200',
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-      {cards.map((c) => {
-        const Icon = c.icon;
-        return (
-          <div
-            key={c.id}
-            className="p-3 rounded-lg bg-[#0E1219] border border-[#19202C] hover:border-[#222C3D] flex flex-col justify-between transition-colors shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-mono tracking-wider font-semibold text-slate-500">
-                {c.title}
-              </span>
-              <Icon className="w-3 h-3 text-slate-600" />
-            </div>
-
-            <div className="my-1">
-              <div className={`text-xl font-mono font-bold tracking-tight ${c.valColor}`}>
-                <AnimatedValue value={c.value} suffix={c.suffix} decimals={c.decimals} />
+    <section className="surface overflow-hidden rounded-3xl">
+      <div className="grid grid-cols-1 divide-y divide-white/[0.06] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-6">
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
+          return (
+            <div key={metric.id} className="min-h-[116px] p-4">
+              <div className="mb-5 flex items-center justify-between">
+                <div className="text-xs font-medium text-zinc-500">{metric.label}</div>
+                <Icon className="h-3.5 w-3.5 text-zinc-600" />
               </div>
+              <AnimatedNumber
+                value={metric.value}
+                decimals={metric.decimals}
+                suffix={metric.suffix}
+                className={`telemetry text-2xl font-semibold tracking-normal ${metric.tone}`}
+              />
+              <div className="mt-2 truncate text-xs text-zinc-600">{metric.detail}</div>
             </div>
-
-            <div className="text-[9px] font-mono text-slate-500 truncate pt-1 border-t border-[#141A24]">
-              {c.subtext}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

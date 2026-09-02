@@ -1,118 +1,101 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
-  X, 
-  Activity, 
-  Radio, 
-  FileText, 
-  TrendingUp, 
-  Sliders, 
-  FastForward, 
-  Download, 
-  Cpu, 
-  Play, 
-  ShieldAlert, 
-  ShieldCheck 
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Activity, BarChart3, Cpu, Download, FastForward, FileText, Play, Radio, Search, Sliders } from 'lucide-react';
 
 export default function CommandMenuModal({
   isOpen,
   onClose,
+  onOpen,
   onNavigate,
   onRunSimulation,
   onRunDemo,
-  onExportReport
+  onExportReport,
 }) {
   const [query, setQuery] = useState('');
 
+  const commands = useMemo(() => [
+    { id: 'nav-dashboard', label: 'Overview', hint: 'Go to SOC overview', category: 'Navigation', icon: Activity, action: () => onNavigate('dashboard') },
+    { id: 'nav-threat-monitor', label: 'Threat Monitor', hint: 'Open primary verification path', category: 'Navigation', icon: Radio, action: () => onNavigate('threat_monitor') },
+    { id: 'nav-security-events', label: 'Security Events', hint: 'Open persistent event table', category: 'Navigation', icon: FileText, action: () => onNavigate('security_events') },
+    { id: 'nav-analytics', label: 'Analytics & Sweeps', hint: 'Open charts and confusion matrix', category: 'Navigation', icon: BarChart3, action: () => onNavigate('analytics') },
+    { id: 'nav-experiment-lab', label: 'Experiment Lab', hint: 'Configure threat injection', category: 'Navigation', icon: Sliders, action: () => onNavigate('experiment_lab') },
+    { id: 'nav-soc-demo', label: 'Full SOC Demo', hint: 'Run five-step validation', category: 'Navigation', icon: FastForward, action: () => onNavigate('soc_demo') },
+    { id: 'nav-reports', label: 'Reports & Export', hint: 'Download JSON or CSV', category: 'Navigation', icon: Download, action: () => onNavigate('reports') },
+    { id: 'nav-health', label: 'System Health', hint: 'Inspect subsystem status', category: 'System', icon: Cpu, action: () => onNavigate('system_health') },
+    { id: 'run-verify', label: 'Execute Unified Verification', hint: 'Run selected lab scenario', category: 'Actions', icon: Play, action: onRunSimulation },
+    { id: 'run-demo', label: 'Run Full SOC Demo', hint: 'Execute all five scenarios', category: 'Actions', icon: FastForward, action: onRunDemo },
+    { id: 'export-json', label: 'Export JSON Report', hint: 'Download security report', category: 'Actions', icon: Download, action: () => onExportReport('json') },
+    { id: 'export-csv', label: 'Export CSV Audit Log', hint: 'Download audit events', category: 'Actions', icon: Download, action: () => onExportReport('csv') },
+  ], [onNavigate, onRunSimulation, onRunDemo, onExportReport]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         if (isOpen) onClose();
-        else onNavigate(null, true); // toggle
+        else onOpen();
       }
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape' && isOpen) onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, onNavigate]);
+  }, [isOpen, onClose, onOpen]);
+
+  useEffect(() => {
+    if (isOpen) setQuery('');
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const commands = [
-    { id: 'nav-dashboard', label: 'Navigate: SOC Dashboard', category: 'Navigation', icon: Activity, action: () => { onNavigate('dashboard'); onClose(); } },
-    { id: 'nav-threat-monitor', label: 'Navigate: Primary Threat Monitor', category: 'Navigation', icon: Radio, action: () => { onNavigate('threat_monitor'); onClose(); } },
-    { id: 'nav-security-events', label: 'Navigate: Security Events Audit Log', category: 'Navigation', icon: FileText, action: () => { onNavigate('security_events'); onClose(); } },
-    { id: 'nav-analytics', label: 'Navigate: Analytics & Parameter Sweeps', category: 'Navigation', icon: TrendingUp, action: () => { onNavigate('analytics'); onClose(); } },
-    { id: 'nav-experiment-lab', label: 'Navigate: Experiment Lab & Threat Console', category: 'Navigation', icon: Sliders, action: () => { onNavigate('experiment_lab'); onClose(); } },
-    { id: 'nav-soc-demo', label: 'Navigate: Full SOC Security Demo', category: 'Navigation', icon: FastForward, action: () => { onNavigate('soc_demo'); onClose(); } },
-    { id: 'nav-system-health', label: 'Navigate: Subsystem Health Telemetry', category: 'Navigation', icon: Cpu, action: () => { onNavigate('system_health'); onClose(); } },
-    { id: 'act-run-verify', label: 'Action: Execute Unified Verification', category: 'Actions', icon: Play, action: () => { onRunSimulation(); onClose(); } },
-    { id: 'act-run-demo', label: 'Action: Run 5-Step Full SOC Demo', category: 'Actions', icon: FastForward, action: () => { onRunDemo(); onClose(); } },
-    { id: 'act-export-json', label: 'Action: Export Security Report (JSON)', category: 'Actions', icon: Download, action: () => { onExportReport('json'); onClose(); } },
-    { id: 'act-export-csv', label: 'Action: Export Security Audit Log (CSV)', category: 'Actions', icon: Download, action: () => { onExportReport('csv'); onClose(); } },
-  ];
+  const filtered = commands.filter((command) => {
+    const q = query.toLowerCase();
+    return command.label.toLowerCase().includes(q) || command.hint.toLowerCase().includes(q) || command.category.toLowerCase().includes(q);
+  });
 
-  const filtered = commands.filter((c) => 
-    c.label.toLowerCase().includes(query.toLowerCase()) || 
-    c.category.toLowerCase().includes(query.toLowerCase())
-  );
+  const run = (command) => {
+    command.action();
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-[#080A0D]/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-[#0E1219] border border-[#222B3B] w-full max-w-lg rounded-xl shadow-2xl overflow-hidden flex flex-col">
-        
-        {/* Search Input */}
-        <div className="p-3 border-b border-[#19202C] flex items-center gap-2.5">
-          <Search className="w-4 h-4 text-slate-500 flex-shrink-0" />
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-[12vh] backdrop-blur-sm">
+      <div className="fade-up w-full max-w-2xl overflow-hidden rounded-[1.4rem] border border-white/[0.12] bg-[#101113] shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-white/[0.08] px-4 py-3">
+          <Search className="h-4 w-4 text-zinc-500" />
           <input
             type="text"
             autoFocus
-            placeholder="Type a command or jump to section..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-sans"
+            placeholder="Type a command or destination"
+            className="h-9 flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-600"
           />
-          <kbd className="px-1.5 py-0.5 text-[9px] font-mono text-slate-500 bg-[#121620] border border-[#1E2533] rounded">
-            ESC
-          </kbd>
+          <kbd className="rounded-full border border-white/[0.08] bg-black/20 px-2 py-0.5 text-[11px] text-zinc-500">ESC</kbd>
         </div>
 
-        {/* Results List */}
-        <div className="p-2 max-h-72 overflow-y-auto space-y-1">
-          {filtered.length > 0 ? (
-            filtered.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={item.action}
-                  className="w-full p-2 rounded-lg text-left text-xs font-mono text-slate-300 hover:bg-[#151C27] hover:text-slate-100 flex items-center justify-between transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className="w-3.5 h-3.5 text-slate-500 group-hover:text-sky-400" />
-                    <span>{item.label}</span>
-                  </div>
-                  <span className="text-[9px] text-slate-500 font-sans uppercase tracking-wider">{item.category}</span>
-                </button>
-              );
-            })
-          ) : (
-            <div className="p-4 text-center text-xs text-slate-500 font-mono">
-              No matching commands or destinations found.
-            </div>
+        <div className="max-h-[420px] overflow-y-auto p-2">
+          {filtered.length ? filtered.map((command) => {
+            const Icon = command.icon;
+            return (
+              <button
+                key={command.id}
+                type="button"
+                onClick={() => run(command)}
+                className="group grid w-full grid-cols-[32px_1fr_auto] items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-white/[0.055]"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.07] bg-white/[0.025] text-zinc-500 group-hover:text-sky-200">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-zinc-200">{command.label}</div>
+                  <div className="text-xs text-zinc-600">{command.hint}</div>
+                </div>
+                <div className="text-xs text-zinc-600">{command.category}</div>
+              </button>
+            );
+          }) : (
+            <div className="px-4 py-10 text-center text-sm text-zinc-600">No matching commands.</div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="p-2 px-3 border-t border-[#19202C] bg-[#0A0D13] flex items-center justify-between text-[10px] font-mono text-slate-500">
-          <span>Navigate with arrows or click</span>
-          <span>QSOC Command Console</span>
-        </div>
-
       </div>
     </div>
   );
